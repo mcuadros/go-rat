@@ -1,4 +1,4 @@
-package rtar
+package rat
 
 import (
 	"archive/tar"

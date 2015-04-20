@@ -1,7 +1,6 @@
-package rtar
+package rat
 
 import (
-	"encoding/json"
 	"io"
 )
 
@@ -25,16 +24,17 @@ func NewReader(tarReader io.ReadSeeker, mapReader io.Reader) (*Reader, error) {
 func readIndex(r io.Reader) (map[string]*Index, error) {
 	m := make(map[string]*Index, 0)
 
-	dec := json.NewDecoder(r)
+	ir := &IndexReader{r}
 	for {
-		var i Index
-		if err := dec.Decode(&i); err == io.EOF {
+		var err error
+		var i *Index
+		if i, err = ir.Read(); err == io.EOF {
 			break
 		} else if err != nil {
 			return m, err
 		}
 
-		m[i.Name] = &i
+		m[i.Name] = i
 	}
 
 	return m, nil

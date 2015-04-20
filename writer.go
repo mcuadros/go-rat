@@ -1,15 +1,14 @@
-package rtar
+package rat
 
 import (
 	"archive/tar"
-	"encoding/json"
 	"io"
 )
 
 type Writer struct {
 	w        *WriterWrapper
 	t        *tar.Writer
-	j        *json.Encoder
+	i        *IndexWriter
 	index    *Index
 	position int64
 }
@@ -19,12 +18,11 @@ func NewWriter(tarWriter, mapWriter io.Writer) *Writer {
 	return &Writer{
 		w: w,
 		t: tar.NewWriter(w),
-		j: json.NewEncoder(mapWriter),
+		i: &IndexWriter{mapWriter},
 	}
 }
 
 func (w *Writer) Close() error {
-
 	return w.t.Close()
 }
 
@@ -35,7 +33,7 @@ func (w *Writer) Flush() error {
 func (w *Writer) Write(b []byte) (int, error) {
 	n, err := w.t.Write(b)
 	w.index.End = w.w.position
-	w.j.Encode(w.index)
+	w.i.Write(w.index)
 	w.index = nil
 
 	return n, err
