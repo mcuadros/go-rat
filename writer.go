@@ -6,18 +6,16 @@ import (
 )
 
 type Writer struct {
-	w             *WriterWrapper
-	t             *tar.Writer
-	i             *Index
-	currentHeader *tar.Header
-	position      int64
+	w *TrackedWriter
+	t *tar.Writer
+	i *Index
 }
 
 func NewWriter(w io.Writer) *Writer {
-	ww := &WriterWrapper{w, 0}
+	tracked := &TrackedWriter{w, 0}
 	return &Writer{
-		w: ww,
-		t: tar.NewWriter(ww),
+		w: tracked,
+		t: tar.NewWriter(tracked),
 		i: NewIndex(),
 	}
 }
@@ -56,12 +54,12 @@ func (w *Writer) WriteHeader(hdr *tar.Header) error {
 	return err
 }
 
-type WriterWrapper struct {
+type TrackedWriter struct {
 	w        io.Writer
 	position int64
 }
 
-func (w *WriterWrapper) Write(p []byte) (int, error) {
+func (w *TrackedWriter) Write(p []byte) (int, error) {
 	n, err := w.w.Write(p)
 	w.position += int64(n)
 
