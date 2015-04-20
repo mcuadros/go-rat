@@ -35,10 +35,7 @@ func (w *Writer) Flush() error {
 }
 
 func (w *Writer) Write(b []byte) (int, error) {
-	n, err := w.t.Write(b)
-	w.i.Entries[w.currentHeader.Name].End = w.w.position
-
-	return n, err
+	return w.t.Write(b)
 }
 
 func (w *Writer) WriteHeader(hdr *tar.Header) error {
@@ -49,11 +46,11 @@ func (w *Writer) WriteHeader(hdr *tar.Header) error {
 		return err
 	}
 
-	w.currentHeader = hdr
-	w.i.Entries[w.currentHeader.Name] = &IndexEntry{
+	w.i.Entries[hdr.Name] = &IndexEntry{
 		Name:   hdr.Name,
 		Header: headerPosition,
 		Start:  w.w.position,
+		End:    w.w.position + hdr.Size,
 	}
 
 	return err

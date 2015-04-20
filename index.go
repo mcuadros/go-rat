@@ -11,8 +11,7 @@ const IndexVersion int64 = 1
 
 var (
 	IndexSignature              = []byte{'R', 'A', 'T'}
-	UnsuportedIndexVersion      = errors.New("Unsuported Index signature")
-	WrongIndexSignature         = errors.New("Wrong Index signature")
+	UnsuportedIndex             = errors.New("Unsuported tar file")
 	UnableToSerializeIndexEntry = errors.New("Unable to serialize: invalid content")
 )
 
@@ -74,7 +73,7 @@ func (i *Index) ReadFrom(r io.ReadSeeker) error {
 	}
 
 	if !bytes.Equal(sig, IndexSignature) {
-		return WrongIndexSignature
+		return UnsuportedIndex
 	}
 
 	var version int64
@@ -83,7 +82,7 @@ func (i *Index) ReadFrom(r io.ReadSeeker) error {
 	}
 
 	if version != IndexVersion {
-		return UnsuportedIndexVersion
+		return UnsuportedIndex
 	}
 
 	i.Entries = make(map[string]*IndexEntry, 0)
@@ -131,7 +130,6 @@ func (i *IndexEntry) WriteTo(w io.Writer) error {
 		return err
 	}
 
-	//TODO: not allow 0 in start or end
 	if err := binary.Write(w, binary.LittleEndian, i.Start); err != nil {
 		return err
 	}
