@@ -6,24 +6,28 @@ import (
 )
 
 type Writer struct {
-	w        *WriterWrapper
-	t        *tar.Writer
-	i        *IndexWriter
-	index    *Index
-	position int64
+	w             *WriterWrapper
+	t             *tar.Writer
+	i             *Index
+	currentHeader *tar.Header
+	position      int64
 }
 
-func NewWriter(tarWriter, mapWriter io.Writer) *Writer {
-	w := &WriterWrapper{tarWriter, 0}
+func NewWriter(w io.Writer) *Writer {
+	ww := &WriterWrapper{w, 0}
 	return &Writer{
-		w: w,
-		t: tar.NewWriter(w),
-		i: &IndexWriter{mapWriter},
+		w: ww,
+		t: tar.NewWriter(ww),
+		i: NewIndex(),
 	}
 }
 
 func (w *Writer) Close() error {
-	return w.t.Close()
+	if err := w.t.Close(); err != nil {
+		return err
+	}
+
+	return w.i.WriteTo(w.w)
 }
 
 func (w *Writer) Flush() error {
@@ -32,26 +36,19 @@ func (w *Writer) Flush() error {
 
 func (w *Writer) Write(b []byte) (int, error) {
 	n, err := w.t.Write(b)
-	w.index.End = w.w.position
-	w.i.Write(w.index)
-	w.index = nil
+	w.i.Entries[w.currentHeader.Name].End = w.w.position
 
 	return n, err
 }
 
 func (w *Writer) WriteHeader(hdr *tar.Header) error {
 	err := w.t.WriteHeader(hdr)
-	w.index = &Index{
+	w.currentHeader = hdr
+	w.i.Entries[w.currentHeader.Name] = &IndexEntry{
 		Name:  hdr.Name,
 		Start: w.w.position,
 	}
-
 	return err
-}
-
-type Index struct {
-	Name       string
-	Start, End int64
 }
 
 type WriterWrapper struct {

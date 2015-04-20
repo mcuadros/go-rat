@@ -17,8 +17,7 @@ var _ = Suite(&TestSuite{})
 
 func (s *TestSuite) TestWriter(c *C) {
 	f := bytes.NewBuffer(nil)
-	i := bytes.NewBuffer(nil)
-	w := NewWriter(f, i)
+	w := NewWriter(f)
 
 	h := &tar.Header{
 		Name:    "foo.txt",
@@ -43,7 +42,9 @@ func (s *TestSuite) TestWriter(c *C) {
 	c.Assert(n, Equals, 3)
 	c.Assert(err, IsNil)
 
-	r, err := NewReader(bytes.NewReader(f.Bytes()), i)
+	c.Assert(w.Close(), IsNil)
+
+	r, err := NewReader(bytes.NewReader(f.Bytes()))
 	c.Assert(err, IsNil)
 
 	d, err := r.ReadFile("foo.txt")

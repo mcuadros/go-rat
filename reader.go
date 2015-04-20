@@ -6,42 +6,23 @@ import (
 
 type Reader struct {
 	r io.ReadSeeker
-	m map[string]*Index
+	i *Index
 }
 
-func NewReader(tarReader io.ReadSeeker, mapReader io.Reader) (*Reader, error) {
-	m, err := readIndex(mapReader)
-	if err != nil {
+func NewReader(r io.ReadSeeker) (*Reader, error) {
+	i := &Index{}
+	if err := i.ReadFrom(r); err != nil {
 		return nil, err
 	}
 
 	return &Reader{
-		r: tarReader,
-		m: m,
+		r: r,
+		i: i,
 	}, nil
 }
 
-func readIndex(r io.Reader) (map[string]*Index, error) {
-	m := make(map[string]*Index, 0)
-
-	ir := &IndexReader{r}
-	for {
-		var err error
-		var i *Index
-		if i, err = ir.Read(); err == io.EOF {
-			break
-		} else if err != nil {
-			return m, err
-		}
-
-		m[i.Name] = i
-	}
-
-	return m, nil
-}
-
 func (r *Reader) ReadFile(file string) ([]byte, error) {
-	i, ok := r.m[file]
+	i, ok := r.i.Entries[file]
 	if !ok {
 		return nil, io.EOF
 	}
