@@ -42,12 +42,20 @@ func (w *Writer) Write(b []byte) (int, error) {
 }
 
 func (w *Writer) WriteHeader(hdr *tar.Header) error {
+	headerPosition := w.w.position
+
 	err := w.t.WriteHeader(hdr)
+	if err != nil {
+		return err
+	}
+
 	w.currentHeader = hdr
 	w.i.Entries[w.currentHeader.Name] = &IndexEntry{
-		Name:  hdr.Name,
-		Start: w.w.position,
+		Name:   hdr.Name,
+		Header: headerPosition,
+		Start:  w.w.position,
 	}
+
 	return err
 }
 

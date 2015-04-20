@@ -7,9 +7,13 @@ import (
 	"io"
 )
 
+const IndexVersion int64 = 1
+
 var (
-	IndexSignature      = []byte{'R', 'A', 'T'}
-	WrongIndexSignature = errors.New("Wrong Index signature")
+	IndexSignature              = []byte{'R', 'A', 'T'}
+	UnsuportedIndexVersion      = errors.New("Unsuported Index signature")
+	WrongIndexSignature         = errors.New("Wrong Index signature")
+	UnableToSerializeIndexEntry = errors.New("Unable to serialize: invalid content")
 )
 
 type Index struct {
@@ -26,6 +30,10 @@ func NewIndex() *Index {
 // - 8-byte length
 func (i *Index) WriteTo(w io.Writer) error {
 	tail := bytes.NewBuffer(IndexSignature)
+	if err := binary.Write(tail, binary.LittleEndian, IndexVersion); err != nil {
+		return err
+	}
+
 	for _, e := range i.Entries {
 		if err := e.WriteTo(tail); err != nil {
 			return err
@@ -69,6 +77,15 @@ func (i *Index) ReadFrom(r io.ReadSeeker) error {
 		return WrongIndexSignature
 	}
 
+	var version int64
+	if err := binary.Read(r, binary.LittleEndian, &version); err != nil {
+		return err
+	}
+
+	if version != IndexVersion {
+		return UnsuportedIndexVersion
+	}
+
 	i.Entries = make(map[string]*IndexEntry, 0)
 	for {
 		e := &IndexEntry{}
@@ -86,21 +103,31 @@ func (i *Index) ReadFrom(r io.ReadSeeker) error {
 
 type IndexEntry struct {
 	Name       string
+	Header     int64
 	Start, End int64
 }
 
 // IndexEntry byte representation on LittleEndian have the following format:
 // - 4-byte length of the filename
 // - x-byte filename
+// - 8-byte header
 // - 8-byte start
 // - 8-byte end
 func (i *IndexEntry) WriteTo(w io.Writer) error {
+	if i.Name == "" || i.Start == 0 || i.End == 0 {
+		return UnableToSerializeIndexEntry
+	}
+
 	name := []byte(i.Name)
 	if err := binary.Write(w, binary.LittleEndian, int32(len(name))); err != nil {
 		return err
 	}
 
 	if _, err := w.Write(name); err != nil {
+		return err
+	}
+
+	if err := binary.Write(w, binary.LittleEndian, i.Header); err != nil {
 		return err
 	}
 
@@ -129,7 +156,12 @@ func (i *IndexEntry) ReadFrom(r io.Reader) error {
 
 	i.Name = string(filename)
 
-	err := binary.Read(r, binary.LittleEndian, &i.Start)
+	err := binary.Read(r, binary.LittleEndian, &i.Header)
+	if err != nil {
+		return err
+	}
+
+	err = binary.Read(r, binary.LittleEndian, &i.Start)
 	if err != nil {
 		return err
 	}
