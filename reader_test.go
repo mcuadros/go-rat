@@ -47,6 +47,21 @@ func (s *TestSuite) TestReader_ReadFile(c *C) {
 	c.Assert(string(content), Equals, "foo")
 }
 
+func (s *TestSuite) TestReader_ReadFileNotRegular(c *C) {
+	f := bytes.NewBuffer(nil)
+
+	w := NewWriter(f)
+	w.WriteHeader(&tar.Header{Name: "foo.txt", Size: 3, Typeflag: tar.TypeSymlink})
+	w.Write([]byte("foo"))
+	w.Close()
+
+	r, err := NewReader(bytes.NewReader(f.Bytes()))
+	c.Assert(err, IsNil)
+
+	_, err = r.ReadFile("foo.txt")
+	c.Assert(err, Equals, NotRegFile)
+}
+
 func (s *TestSuite) TestReader_ReadFileNotFound(c *C) {
 	f := bytes.NewBuffer(nil)
 
@@ -75,4 +90,23 @@ func (s *TestSuite) TestReader_ReadFileInvalidIndex(c *C) {
 
 	_, err = r.ReadFile("foo.txt")
 	c.Assert(err, Not(IsNil))
+}
+
+func (s *TestSuite) TestGetNames(c *C) {
+	f := bytes.NewBuffer(nil)
+
+	w := NewWriter(f)
+	w.WriteHeader(&tar.Header{Name: "foo.txt", Size: 3})
+	w.Write([]byte("foo"))
+	w.WriteHeader(&tar.Header{Name: "bar.txt", Typeflag: tar.TypeSymlink})
+	w.Close()
+
+	r, _ := NewReader(bytes.NewReader(f.Bytes()))
+
+	names := r.GetNames(true)
+	c.Assert(names, HasLen, 1)
+	c.Assert(names[0], Equals, "foo.txt")
+
+	names = r.GetNames(false)
+	c.Assert(names, HasLen, 2)
 }

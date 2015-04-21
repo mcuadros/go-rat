@@ -102,6 +102,7 @@ func (i *Index) ReadFrom(r io.ReadSeeker) error {
 
 type IndexEntry struct {
 	Name       string
+	Typeflag   byte
 	Header     int64
 	Start, End int64
 }
@@ -109,6 +110,7 @@ type IndexEntry struct {
 // IndexEntry byte representation on LittleEndian have the following format:
 // - 4-byte length of the filename
 // - x-byte filename
+// - 1-byte type flag
 // - 8-byte header
 // - 8-byte start
 // - 8-byte end
@@ -126,16 +128,18 @@ func (i *IndexEntry) WriteTo(w io.Writer) error {
 		return err
 	}
 
-	if err := binary.Write(w, binary.LittleEndian, i.Header); err != nil {
-		return err
+	var data = []interface{}{
+		i.Typeflag,
+		i.Header,
+		i.Start,
+		i.End,
 	}
 
-	if err := binary.Write(w, binary.LittleEndian, i.Start); err != nil {
-		return err
-	}
-
-	if err := binary.Write(w, binary.LittleEndian, i.End); err != nil {
-		return err
+	for _, v := range data {
+		err := binary.Write(w, binary.LittleEndian, v)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -154,7 +158,12 @@ func (i *IndexEntry) ReadFrom(r io.Reader) error {
 
 	i.Name = string(filename)
 
-	err := binary.Read(r, binary.LittleEndian, &i.Header)
+	err := binary.Read(r, binary.LittleEndian, &i.Typeflag)
+	if err != nil {
+		return err
+	}
+
+	err = binary.Read(r, binary.LittleEndian, &i.Header)
 	if err != nil {
 		return err
 	}

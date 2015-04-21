@@ -1,20 +1,21 @@
 package rat
 
 import (
+	"archive/tar"
 	"bytes"
 	"encoding/hex"
 
 	. "gopkg.in/check.v1"
 )
 
-var indexFixture = "524154010000000000000003000000666f6f2a0000000000000054000000000000007e00000000000000030000006261722a0000000000000054000000000000007e000000000000004900000000000000"
-var entryFixture = "03000000666f6f2a0000000000000054000000000000007e00000000000000"
+var indexFixture = "524154010000000000000003000000666f6f322a0000000000000054000000000000007e0000000000000003000000626172302a0000000000000054000000000000007e000000000000004b00000000000000"
+var entryFixture = "03000000666f6f302a0000000000000054000000000000007e00000000000000"
 
 func (s *TestSuite) TestIndex_WriteTo(c *C) {
 	i := Index{
 		map[string]*IndexEntry{
-			"foo": {Name: "foo", Header: 42, Start: 42 * 2, End: 42 * 3},
-			"bar": {Name: "bar", Header: 42, Start: 42 * 2, End: 42 * 3},
+			"foo": {Name: "foo", Header: 42, Start: 42 * 2, End: 42 * 3, Typeflag: tar.TypeSymlink},
+			"bar": {Name: "bar", Header: 42, Start: 42 * 2, End: 42 * 3, Typeflag: tar.TypeReg},
 		},
 	}
 
@@ -40,7 +41,7 @@ func (s *TestSuite) TestIndex_ReadFrom(c *C) {
 }
 
 func (s *TestSuite) TestIndexEntry_WriteTo(c *C) {
-	e := IndexEntry{Name: "foo", Header: 42, Start: 42 * 2, End: 42 * 3}
+	e := IndexEntry{Name: "foo", Header: 42, Start: 42 * 2, End: 42 * 3, Typeflag: tar.TypeReg}
 
 	buf := bytes.NewBuffer(nil)
 	err := e.WriteTo(buf)
@@ -70,6 +71,7 @@ func (s *TestSuite) TestIndexEntry_ReadFrom(c *C) {
 	c.Assert(e.Header, DeepEquals, int64(42))
 	c.Assert(e.Start, DeepEquals, int64(42*2))
 	c.Assert(e.End, DeepEquals, int64(42*3))
+	c.Assert(e.Typeflag, Equals, byte(tar.TypeReg))
 }
 
 func (s *TestSuite) TestIndexEntry_ReadFromInvalid(c *C) {

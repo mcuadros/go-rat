@@ -1,6 +1,7 @@
 package rat
 
 import (
+	"archive/tar"
 	"errors"
 	"io"
 )
@@ -10,7 +11,10 @@ type Reader struct {
 	i *Index
 }
 
-var FileNotFound = errors.New("File not found")
+var (
+	FileNotFound = errors.New("File not found")
+	NotRegFile   = errors.New("This is not a regular file")
+)
 
 func NewReader(r io.ReadSeeker) (*Reader, error) {
 	i := &Index{}
@@ -21,10 +25,28 @@ func NewReader(r io.ReadSeeker) (*Reader, error) {
 	return &Reader{r: r, i: i}, nil
 }
 
+func (r *Reader) GetNames(onlyRegFiles bool) []string {
+	result := make([]string, 0)
+
+	for name, i := range r.i.Entries {
+		if onlyRegFiles && i.Typeflag != tar.TypeReg && i.Typeflag != tar.TypeRegA {
+			continue
+		}
+
+		result = append(result, name)
+	}
+
+	return result
+}
+
 func (r *Reader) ReadFile(file string) ([]byte, error) {
 	i, ok := r.i.Entries[file]
 	if !ok {
 		return nil, FileNotFound
+	}
+
+	if i.Typeflag != tar.TypeReg && i.Typeflag != tar.TypeRegA {
+		return nil, NotRegFile
 	}
 
 	if _, err := r.r.Seek(i.Start, 0); err != nil {

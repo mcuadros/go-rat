@@ -45,10 +45,11 @@ func (w *Writer) WriteHeader(hdr *tar.Header) error {
 	}
 
 	w.i.Entries[hdr.Name] = &IndexEntry{
-		Name:   hdr.Name,
-		Header: headerPosition,
-		Start:  w.w.position,
-		End:    w.w.position + hdr.Size,
+		Name:     hdr.Name,
+		Typeflag: hdr.Typeflag,
+		Header:   headerPosition,
+		Start:    w.w.position,
+		End:      w.w.position + hdr.Size,
 	}
 
 	return err

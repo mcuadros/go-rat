@@ -12,7 +12,7 @@ func (s *TestSuite) TestWriter_WriteHeader(c *C) {
 	w := NewWriter(f)
 	c.Assert(w.i.Entries, HasLen, 0)
 
-	err := w.WriteHeader(&tar.Header{Name: "foo.txt", Size: 3})
+	err := w.WriteHeader(&tar.Header{Name: "foo.txt", Size: 3, Typeflag: tar.TypeReg})
 	c.Assert(err, IsNil)
 
 	c.Assert(w.i.Entries, HasLen, 1)
@@ -21,6 +21,7 @@ func (s *TestSuite) TestWriter_WriteHeader(c *C) {
 	c.Assert(e.Header, Equals, int64(0))
 	c.Assert(e.Start, Equals, int64(512))
 	c.Assert(e.End, Equals, int64(515))
+	c.Assert(e.Typeflag, Equals, byte(tar.TypeReg))
 }
 
 func (s *TestSuite) TestWriter_Write(c *C) {
@@ -51,7 +52,7 @@ func (s *TestSuite) TestWriter_Close(c *C) {
 	c.Assert(f.Len(), Equals, 515)
 	err := w.Close()
 	c.Assert(err, IsNil)
-	c.Assert(f.Len(), Equals, 2102)
+	c.Assert(f.Len(), Equals, 2103)
 }
 
 func (s *TestSuite) TestWriter_CloseFailed(c *C) {
