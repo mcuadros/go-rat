@@ -5,7 +5,9 @@ import (
 	"io"
 )
 
-func AddIndexToFile(input io.Reader, output io.Writer) error {
+// AddIndexIndexToTar reads from input a standard tar file and writes on output
+// a new tar file with the rat signature on it.
+func AddIndexIndexToTar(input io.Reader, output io.Writer) error {
 	r := tar.NewReader(input)
 	w := NewWriter(output)
 

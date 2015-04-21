@@ -75,7 +75,7 @@ func (s *TestSuite) TestReader_ReadFileNotFound(c *C) {
 	c.Assert(err, Equals, FileNotFound)
 }
 
-func (s *TestSuite) TestReader_ReadFileInvalidIndex(c *C) {
+func (s *TestSuite) TestReader_ReadFileInvalidindex(c *C) {
 	f := bytes.NewBuffer(nil)
 
 	w := NewWriter(f)

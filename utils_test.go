@@ -7,12 +7,12 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-func (s *TestSuite) TestAddIndexToFile(c *C) {
+func (s *TestSuite) TestAddIndexIndexToTar(c *C) {
 	f, err := os.Open("fixtures/bsd.tar")
 	c.Assert(err, IsNil)
 
 	buf := bytes.NewBuffer(nil)
-	err = AddIndexToFile(f, buf)
+	err = AddIndexIndexToTar(f, buf)
 	c.Assert(err, IsNil)
 
 	r, err := NewReader(bytes.NewReader(buf.Bytes()))
