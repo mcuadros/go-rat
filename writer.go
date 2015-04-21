@@ -5,21 +5,26 @@ import (
 	"io"
 )
 
+// A Writer provides sequential writing of a rat archive. Writer has exactly the
+// same interfaces as http://golang.org/pkg/archive/tar/#Writer does
 type Writer struct {
-	w *TrackedWriter
+	w *trackedWriter
 	t *tar.Writer
-	i *Index
+	i *index
 }
 
+// NewWriter creates a new Writer writing to w.
 func NewWriter(w io.Writer) *Writer {
-	tracked := &TrackedWriter{w, 0}
+	tracked := &trackedWriter{w, 0}
 	return &Writer{
 		w: tracked,
 		t: tar.NewWriter(tracked),
-		i: NewIndex(),
+		i: Newindex(),
 	}
 }
 
+// Close closes the tar archive, flushing any unwritten data to the underlying
+// writer and writes the rat signature at the end of the writer.
 func (w *Writer) Close() error {
 	if err := w.t.Close(); err != nil {
 		return err
@@ -28,14 +33,17 @@ func (w *Writer) Close() error {
 	return w.i.WriteTo(w.w)
 }
 
+// Flush finishes writing the current file (optional).
 func (w *Writer) Flush() error {
 	return w.t.Flush()
 }
 
+// Write writes to the current entry in the tar archive.
 func (w *Writer) Write(b []byte) (int, error) {
 	return w.t.Write(b)
 }
 
+// WriteHeader writes hdr and prepares to accept the file's contents.
 func (w *Writer) WriteHeader(hdr *tar.Header) error {
 	headerPosition := w.w.position
 
@@ -44,7 +52,7 @@ func (w *Writer) WriteHeader(hdr *tar.Header) error {
 		return err
 	}
 
-	w.i.Entries[hdr.Name] = &IndexEntry{
+	w.i.Entries[hdr.Name] = &indexEntry{
 		Name:     hdr.Name,
 		Typeflag: hdr.Typeflag,
 		Header:   headerPosition,
@@ -55,12 +63,12 @@ func (w *Writer) WriteHeader(hdr *tar.Header) error {
 	return err
 }
 
-type TrackedWriter struct {
+type trackedWriter struct {
 	w        io.Writer
 	position int64
 }
 
-func (w *TrackedWriter) Write(p []byte) (int, error) {
+func (w *trackedWriter) Write(p []byte) (int, error) {
 	n, err := w.w.Write(p)
 	w.position += int64(n)
 

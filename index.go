@@ -15,19 +15,19 @@ var (
 	UnableToSerializeIndexEntry = errors.New("Unable to serialize: invalid content")
 )
 
-type Index struct {
-	Entries map[string]*IndexEntry
+type index struct {
+	Entries map[string]*indexEntry
 }
 
-func NewIndex() *Index {
-	return &Index{make(map[string]*IndexEntry, 0)}
+func Newindex() *index {
+	return &index{make(map[string]*indexEntry, 0)}
 }
 
-// IndexEntry byte representation on LittleEndian have the following format:
+// indexEntry byte representation on LittleEndian have the following format:
 // - 3-byte index signature
 // - x-byte index entries
 // - 8-byte length
-func (i *Index) WriteTo(w io.Writer) error {
+func (i *index) WriteTo(w io.Writer) error {
 	tail := bytes.NewBuffer(IndexSignature)
 	if err := binary.Write(tail, binary.LittleEndian, IndexVersion); err != nil {
 		return err
@@ -53,7 +53,7 @@ func (i *Index) WriteTo(w io.Writer) error {
 
 const tailSizeLength = 8 //int64
 
-func (i *Index) ReadFrom(r io.ReadSeeker) error {
+func (i *index) ReadFrom(r io.ReadSeeker) error {
 	if _, err := r.Seek(-tailSizeLength, 2); err != nil {
 		return err
 	}
@@ -85,9 +85,9 @@ func (i *Index) ReadFrom(r io.ReadSeeker) error {
 		return UnsuportedIndex
 	}
 
-	i.Entries = make(map[string]*IndexEntry, 0)
+	i.Entries = make(map[string]*indexEntry, 0)
 	for {
-		e := &IndexEntry{}
+		e := &indexEntry{}
 		if err := e.ReadFrom(r); err == io.EOF {
 			break
 		} else if err != nil {
@@ -100,21 +100,21 @@ func (i *Index) ReadFrom(r io.ReadSeeker) error {
 	return nil
 }
 
-type IndexEntry struct {
+type indexEntry struct {
 	Name       string
 	Typeflag   byte
 	Header     int64
 	Start, End int64
 }
 
-// IndexEntry byte representation on LittleEndian have the following format:
+// indexEntry byte representation on LittleEndian have the following format:
 // - 4-byte length of the filename
 // - x-byte filename
 // - 1-byte type flag
 // - 8-byte header
 // - 8-byte start
 // - 8-byte end
-func (i *IndexEntry) WriteTo(w io.Writer) error {
+func (i *indexEntry) WriteTo(w io.Writer) error {
 	if i.Name == "" || i.Start == 0 || i.End == 0 {
 		return UnableToSerializeIndexEntry
 	}
@@ -145,7 +145,7 @@ func (i *IndexEntry) WriteTo(w io.Writer) error {
 	return nil
 }
 
-func (i *IndexEntry) ReadFrom(r io.Reader) error {
+func (i *indexEntry) ReadFrom(r io.Reader) error {
 	var length int32
 	if err := binary.Read(r, binary.LittleEndian, &length); err != nil {
 		return err

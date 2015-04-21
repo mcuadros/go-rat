@@ -12,8 +12,8 @@ var indexFixture = "524154010000000000000003000000666f6f322a00000000000000540000
 var entryFixture = "03000000666f6f302a0000000000000054000000000000007e00000000000000"
 
 func (s *TestSuite) TestIndex_WriteTo(c *C) {
-	i := Index{
-		map[string]*IndexEntry{
+	i := index{
+		map[string]*indexEntry{
 			"foo": {Name: "foo", Header: 42, Start: 42 * 2, End: 42 * 3, Typeflag: tar.TypeSymlink},
 			"bar": {Name: "bar", Header: 42, Start: 42 * 2, End: 42 * 3, Typeflag: tar.TypeReg},
 		},
@@ -28,7 +28,7 @@ func (s *TestSuite) TestIndex_WriteTo(c *C) {
 }
 
 func (s *TestSuite) TestIndex_ReadFrom(c *C) {
-	i := Index{}
+	i := index{}
 
 	fixture, _ := hex.DecodeString(indexFixture)
 	buf := bytes.NewReader(fixture)
@@ -41,7 +41,7 @@ func (s *TestSuite) TestIndex_ReadFrom(c *C) {
 }
 
 func (s *TestSuite) TestIndexEntry_WriteTo(c *C) {
-	e := IndexEntry{Name: "foo", Header: 42, Start: 42 * 2, End: 42 * 3, Typeflag: tar.TypeReg}
+	e := indexEntry{Name: "foo", Header: 42, Start: 42 * 2, End: 42 * 3, Typeflag: tar.TypeReg}
 
 	buf := bytes.NewBuffer(nil)
 	err := e.WriteTo(buf)
@@ -52,7 +52,7 @@ func (s *TestSuite) TestIndexEntry_WriteTo(c *C) {
 }
 
 func (s *TestSuite) TestIndexEntry_WriteToInvalid(c *C) {
-	e := IndexEntry{}
+	e := indexEntry{}
 
 	buf := bytes.NewBuffer(nil)
 	err := e.WriteTo(buf)
@@ -60,7 +60,7 @@ func (s *TestSuite) TestIndexEntry_WriteToInvalid(c *C) {
 }
 
 func (s *TestSuite) TestIndexEntry_ReadFrom(c *C) {
-	e := IndexEntry{}
+	e := indexEntry{}
 
 	fixture, _ := hex.DecodeString(entryFixture)
 	buf := bytes.NewBuffer(fixture)
@@ -75,7 +75,7 @@ func (s *TestSuite) TestIndexEntry_ReadFrom(c *C) {
 }
 
 func (s *TestSuite) TestIndexEntry_ReadFromInvalid(c *C) {
-	e := IndexEntry{}
+	e := indexEntry{}
 
 	buf := bytes.NewBuffer([]byte("foo"))
 
